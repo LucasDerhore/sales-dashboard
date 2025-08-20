@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import dayjs from "dayjs";
 import Papa from "papaparse";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import SalesPDF from "../components/SalesPDF";
+import { api } from "../lib/api";
 
 type Product = {
   id: number;
@@ -45,9 +43,10 @@ const Sales = () => {
   });
 
   const fetchAll = () => {
-    axios.get("http://localhost:3001/sales?_expand=product&_expand=client").then((res) => setSales(res.data));
-    axios.get("http://localhost:3001/products").then((res) => setProducts(res.data));
-    axios.get("http://localhost:3001/clients").then((res) => setClients(res.data));
+    // ⚡ L’API /sales renvoie déjà product + client inclus
+    api.get("/sales").then((res) => setSales(res.data));
+    api.get("/products").then((res) => setProducts(res.data));
+    api.get("/clients").then((res) => setClients(res.data));
   };
 
   useEffect(() => {
@@ -67,7 +66,7 @@ const Sales = () => {
       return;
     }
 
-    axios.post("http://localhost:3001/sales", form).then(() => {
+    api.post("/sales", form).then(() => {
       setForm({
         productId: 0,
         clientId: 0,
@@ -126,7 +125,9 @@ const Sales = () => {
             >
               <option value={0}>-- Choisir un produit --</option>
               {products.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </div>
@@ -141,7 +142,9 @@ const Sales = () => {
             >
               <option value={0}>-- Choisir un client --</option>
               {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
           </div>
@@ -189,7 +192,9 @@ const Sales = () => {
             >
               <option value={0}>Tous les clients</option>
               {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
           </div>
@@ -217,25 +222,12 @@ const Sales = () => {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            className="bg-gray-700 text-white px-4 py-2 rounded"
-            onClick={exportToCSV}
-          >
-            Exporter en CSV
-          </button>
-
-          <PDFDownloadLink
-            document={<SalesPDF sales={filteredSales} />}
-            fileName="rapport-ventes.pdf"
-          >
-            {({ loading }) => (
-              <button className="bg-red-600 text-white px-4 py-2 rounded">
-                {loading ? "Génération..." : "Exporter en PDF"}
-              </button>
-            )}
-          </PDFDownloadLink>
-        </div>
+        <button
+          className="bg-gray-700 text-white px-4 py-2 rounded"
+          onClick={exportToCSV}
+        >
+          Exporter en CSV
+        </button>
       </div>
 
       <div className="bg-white rounded shadow p-6">

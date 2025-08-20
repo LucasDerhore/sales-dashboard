@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { api } from "../lib/api";
 import { Product } from "../types/Product";
 import ProductTable from "../components/ProductTable";
 import ProductForm from "../components/ProductForm";
@@ -10,7 +10,7 @@ const Products = () => {
   const [showForm, setShowForm] = useState(false);
 
   const fetchProducts = () => {
-    axios.get("http://localhost:3001/products").then((res) => setProducts(res.data));
+    api.get("/products");
   };
 
   useEffect(() => {
@@ -19,9 +19,9 @@ const Products = () => {
 
   const handleAddOrUpdate = (productData: Omit<Product, "id">, id?: number) => {
     if (id) {
-      axios.put(`http://localhost:3001/products/${id}`, productData).then(fetchProducts);
+      api.put(`/products/${id}`, productData).then(fetchProducts);
     } else {
-      axios.post("http://localhost:3001/products", productData).then(fetchProducts);
+      api.post("/products", productData).then(fetchProducts);
     }
     setEditingProduct(null);
     setShowForm(false);
@@ -29,7 +29,7 @@ const Products = () => {
 
   const handleDelete = (id: number) => {
     if (confirm("Supprimer ce produit ?")) {
-      axios.delete(`http://localhost:3001/products/${id}`).then(fetchProducts);
+      api.delete(`/products/${id}`).then(fetchProducts);
     }
   };
 

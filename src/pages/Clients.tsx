@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { api } from "../lib/api";
 import { Client } from "../types/Client";
 import ClientForm from "../components/ClientForm";
 
@@ -9,7 +9,7 @@ const Clients = () => {
   const [showForm, setShowForm] = useState(false);
 
   const fetchClients = () => {
-    axios.get("http://localhost:3001/clients").then((res) => setClients(res.data));
+    api.get("/clients").then((res) => setClients(res.data));
   };
 
   useEffect(() => {
@@ -17,18 +17,15 @@ const Clients = () => {
   }, []);
 
   const handleAddOrUpdate = (data: Omit<Client, "id">, id?: number) => {
-    if (id) {
-      axios.put(`http://localhost:3001/clients/${id}`, data).then(fetchClients);
-    } else {
-      axios.post("http://localhost:3001/clients", data).then(fetchClients);
-    }
+    const req = id ? api.put(`/clients/${id}`, data) : api.post("/clients", data);
+    req.then(fetchClients);
     setEditingClient(null);
     setShowForm(false);
   };
 
   const handleDelete = (id: number) => {
     if (confirm("Supprimer ce client ?")) {
-      axios.delete(`http://localhost:3001/clients/${id}`).then(fetchClients);
+      api.delete(`/clients/${id}`).then(fetchClients);
     }
   };
 

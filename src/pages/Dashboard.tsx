@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { api } from "../lib/api";
 import dayjs from "dayjs";
 import StatCard from "../components/StatCard";
 import SalesChart from "../components/SalesChart";
@@ -14,21 +14,24 @@ const Dashboard = () => {
 
   useEffect(() => {
     // Produits
-    axios.get("http://localhost:3001/products").then((res) => {
-      setProductCount(res.data.length);
-    });
+    api.get("/products").then((res) => setProductCount(res.data));
 
     // Clients
-    axios.get("http://localhost:3001/clients").then((res) => {
-      setClientCount(res.data.length);
-    });
+    api.get("/clients").then((res) => setClientCount(res.data));
 
     // Ventes pour total + panier moyen + chart
-    axios.get("http://localhost:3001/sales?_expand=product").then((res) => {
-      const sales = res.data;
+    api.get("/sales").then((res) => {
+      const sales = res.data as Array<{
+        id: number;
+        date: string;
+        quantity: number;
+        product?: { price?: number; name?: string };
+        client?: { name?: string };
+      }>;
 
+      // Total & Panier moyen
       const total = sales.reduce(
-        (sum: number, sale: any) => sum + sale.quantity * (sale.product?.price ?? 0),
+        (sum, s) => sum + s.quantity * (s.product?.price ?? 0),
         0
       );
       const avg = sales.length > 0 ? total / sales.length : 0;
@@ -36,30 +39,26 @@ const Dashboard = () => {
       setTotalSales(total);
       setAverageBasket(avg);
 
-      // Regrouper les ventes par mois
-      const grouped: { [key: string]: number } = {};
-      sales.forEach((sale: any) => {
-        const month = dayjs(sale.date).format("YYYY-MM");
-        const amount = sale.quantity * (sale.product?.price ?? 0);
-        grouped[month] = (grouped[month] || 0) + amount;
+      // Regrouper par mois pour le graphique
+      const grouped: Record<string, number> = {};
+      sales.forEach((s) => {
+        const monthKey = dayjs(s.date).format("YYYY-MM");
+        const amount = s.quantity * (s.product?.price ?? 0);
+        grouped[monthKey] = (grouped[monthKey] || 0) + amount;
       });
 
       const formatted = Object.entries(grouped)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([month, total]) => ({
+        .map(([month, tot]) => ({
           month: dayjs(month).format("MMM YYYY"),
-          total: Number(total.toFixed(2)),
+          total: Number(tot.toFixed(2)),
         }));
 
       setSalesByMonth(formatted);
-    });
 
-    // Ventes récentes (triées + client + produit)
-    axios
-      .get("http://localhost:3001/sales?_expand=product&_expand=client&_sort=date&_order=desc&_limit=5")
-      .then((res) => {
-        setRecentSales(res.data);
-      });
+      // Ventes récentes (l’API renvoie déjà trié desc par date)
+      setRecentSales(sales.slice(0, 5));
+    });
   }, []);
 
   return (
